@@ -3,7 +3,7 @@ package dev.abhishekbansal.nexrad
 import android.app.Activity
 import android.app.ActivityManager
 import android.os.Bundle
-import dev.abhishekbansal.nexrad.databinding.LessonOneBinding
+import dev.abhishekbansal.nexrad.databinding.ActivityNexradRenderBinding
 import dev.abhishekbansal.nexrad.renderer.FPSChangeListener
 import dev.abhishekbansal.nexrad.renderer.NexradRenderer
 
@@ -11,7 +11,7 @@ class NexradRenderActivity : Activity() {
     /**
      * Hold a reference to our GLSurfaceView
      */
-    private val binding: LessonOneBinding by lazy { LessonOneBinding.inflate(layoutInflater) }
+    private val binding: ActivityNexradRenderBinding by lazy { ActivityNexradRenderBinding.inflate(layoutInflater) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
