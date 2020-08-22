@@ -10,7 +10,7 @@
         android:largeHeap="true"
         android:theme="@style/AppTheme" >
 
-        <activity android:name="dev.abhishekbansal.nexrad.LessonOneActivity">
+        <activity android:name="dev.abhishekbansal.nexrad.NexradRenderActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
