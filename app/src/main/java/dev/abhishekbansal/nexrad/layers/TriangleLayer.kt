@@ -23,22 +23,22 @@ class TriangleLayer(val context: Context) : Layer {
     private val mStrideBytes: Int = 7 * mBytesPerFloat
 
     /**
-     * Offset of the position data.
+     * Offset of the position l3_data.
      */
     private val mPositionOffset = 0
 
     /**
-     * Size of the position data in elements.
+     * Size of the position l3_data in elements.
      */
     private val mPositionDataSize = 3
 
     /**
-     * Offset of the color data.
+     * Offset of the color l3_data.
      */
     private val mColorOffset = 3
 
     /**
-     * Size of the color data in elements.
+     * Size of the color l3_data in elements.
      */
     private val mColorDataSize = 4
 
@@ -93,7 +93,6 @@ class TriangleLayer(val context: Context) : Layer {
         mPositionHandle = GLES20.glGetAttribLocation(triangleShader.handle, "a_Position")
         mColorHandle = GLES20.glGetAttribLocation(triangleShader.handle, "a_Color")
     }
-
 
     override fun draw(mvpMatrix: FloatArray) {
         triangleShader.activate()
