@@ -5,6 +5,7 @@ import android.opengl.GLES30
 import android.opengl.GLSurfaceView
 import android.opengl.Matrix
 import dev.abhishekbansal.nexrad.layers.Layer
+import dev.abhishekbansal.nexrad.layers.ReflectivityLayer
 import dev.abhishekbansal.nexrad.layers.TriangleLayer
 import timber.log.Timber
 import javax.microedition.khronos.egl.EGLConfig
@@ -67,7 +68,7 @@ class NexradRenderer(private val context: Context) : GLSurfaceView.Renderer,
         // NOTE: In OpenGL 1, a ModelView matrix is used, which is a combination of a model and
         // view matrix. In OpenGL 2, we can keep track of these matrices separately if we choose.
         Matrix.setLookAtM(mViewMatrix, 0, eyeX, eyeY, eyeZ, lookX, lookY, lookZ, upX, upY, upZ)
-        val layer = TriangleLayer(context)
+        val layer = ReflectivityLayer(context)
         layer.prepare()
         layers.add(layer)
     }

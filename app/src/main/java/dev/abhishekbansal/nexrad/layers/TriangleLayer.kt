@@ -94,7 +94,6 @@ class TriangleLayer(val context: Context) : Layer {
         mColorHandle = GLES20.glGetAttribLocation(triangleShader.handle, "a_Color")
     }
 
-
     override fun draw(mvpMatrix: FloatArray) {
         triangleShader.activate()
 
