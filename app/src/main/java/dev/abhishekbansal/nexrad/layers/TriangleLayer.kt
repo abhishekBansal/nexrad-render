@@ -23,22 +23,22 @@ class TriangleLayer(val context: Context) : Layer {
     private val mStrideBytes: Int = 7 * mBytesPerFloat
 
     /**
-     * Offset of the position l3_data.
+     * Offset of the position data.
      */
     private val mPositionOffset = 0
 
     /**
-     * Size of the position l3_data in elements.
+     * Size of the position data in elements.
      */
     private val mPositionDataSize = 3
 
     /**
-     * Offset of the color l3_data.
+     * Offset of the color data.
      */
     private val mColorOffset = 3
 
     /**
-     * Size of the color l3_data in elements.
+     * Size of the color data in elements.
      */
     private val mColorDataSize = 4
 
