@@ -69,7 +69,7 @@ class ReflectivityLayer(val context: Context) : Layer {
 
     private val meshShader by lazy {
         Shader(
-            context.rawResToString(R.raw.basic_vertex),
+            context.rawResToString(R.raw.reflectivity_vertex),
             context.rawResToString(R.raw.basic_fragment)
         )
     }
@@ -226,7 +226,7 @@ class ReflectivityLayer(val context: Context) : Layer {
     }
 
     private fun getData(context: Context): Reflectivity {
-        return Gson().fromJson(context.rawResToString(R.raw.l2_data), Reflectivity::class.java)
+        return Gson().fromJson(context.rawResToString(R.raw.l3_data), Reflectivity::class.java)
     }
 
     private fun getColor(reflectivity: Float): FloatArray {
