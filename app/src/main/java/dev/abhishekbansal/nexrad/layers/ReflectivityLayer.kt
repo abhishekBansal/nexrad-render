@@ -49,12 +49,12 @@ class ReflectivityLayer(val context: Context) : Layer {
     /**
      * Size of the position data in elements.
      */
-    private val positionDataSize = 3
+    private val positionDataSize = 2
 
     /**
      * Offset of the color data.
      */
-    private val colorOffset = 3
+    private val colorOffset = positionDataSize
 
     /**
      * Size of the color data in elements.
@@ -69,7 +69,7 @@ class ReflectivityLayer(val context: Context) : Layer {
 
     private val meshShader by lazy {
         Shader(
-            context.rawResToString(R.raw.basic_vertex),
+            context.rawResToString(R.raw.reflectivity_vertex),
             context.rawResToString(R.raw.basic_fragment)
         )
     }
@@ -126,8 +126,8 @@ class ReflectivityLayer(val context: Context) : Layer {
     private fun generateVertexData() {
         val data = getData(context)
 
-        // per vertex data = 3xyz + 3rgb
-        val perVertexElements = 3 + 3
+        // per vertex data = 2xy + 3rgb
+        val perVertexElements = positionDataSize + colorDataSize
         // since we don't want go beyond last gate hence gate-1
         val totalVertices = data.azimuth.size * (data.gates.size - 1)
         // Each vertex is part of 6 triangles,
@@ -166,7 +166,6 @@ class ReflectivityLayer(val context: Context) : Layer {
                 // r1 theta1
                 reflectivityMesh[index++] = r1SinTheta1
                 reflectivityMesh[index++] = r1CosTheta1
-                reflectivityMesh[index++] = 0.0f
                 // color information for triangle 1 vertex 1
                 reflectivityMesh[index++] = getColor(reflectivity)[0]
                 reflectivityMesh[index++] = getColor(reflectivity)[1]
@@ -175,7 +174,6 @@ class ReflectivityLayer(val context: Context) : Layer {
                 // r2 theta1
                 reflectivityMesh[index++] = r2SinTheta1
                 reflectivityMesh[index++] = r2CosTheta1
-                reflectivityMesh[index++] = 0.0f
                 // color information for triangle 1 vertex 2
                 reflectivityMesh[index++] = getColor(reflectivity)[0]
                 reflectivityMesh[index++] = getColor(reflectivity)[1]
@@ -184,7 +182,6 @@ class ReflectivityLayer(val context: Context) : Layer {
                 // r1 theta2
                 reflectivityMesh[index++] = r1SinTheta2
                 reflectivityMesh[index++] = r1CosTheta2
-                reflectivityMesh[index++] = 0.0f
                 // color information for triangle 1 vertex 3
                 reflectivityMesh[index++] = getColor(reflectivity)[0]
                 reflectivityMesh[index++] = getColor(reflectivity)[1]
@@ -196,7 +193,6 @@ class ReflectivityLayer(val context: Context) : Layer {
                 // r1 theta2
                 reflectivityMesh[index++] = r1SinTheta2
                 reflectivityMesh[index++] = r1CosTheta2
-                reflectivityMesh[index++] = 0.0f
                 // color information for triangle 1 vertex 3
                 reflectivityMesh[index++] = getColor(reflectivity)[0]
                 reflectivityMesh[index++] = getColor(reflectivity)[1]
@@ -205,7 +201,6 @@ class ReflectivityLayer(val context: Context) : Layer {
                 // r2 theta2
                 reflectivityMesh[index++] = r2SinTheta2
                 reflectivityMesh[index++] = r2CosTheta2
-                reflectivityMesh[index++] = 0.0f
                 // color information for triangle 1 vertex 3
                 reflectivityMesh[index++] = getColor(reflectivity)[0]
                 reflectivityMesh[index++] = getColor(reflectivity)[1]
@@ -214,7 +209,6 @@ class ReflectivityLayer(val context: Context) : Layer {
                 // r2 theta1
                 reflectivityMesh[index++] = r2SinTheta1
                 reflectivityMesh[index++] = r2CosTheta1
-                reflectivityMesh[index++] = 0.0f
                 // color information for triangle 1 vertex 2
                 reflectivityMesh[index++] = getColor(reflectivity)[0]
                 reflectivityMesh[index++] = getColor(reflectivity)[1]
