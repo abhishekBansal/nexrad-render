@@ -138,6 +138,7 @@ class ReflectivityLayer(val context: Context) : Layer {
         val nAzimuth = data.azimuth.size
         val nGates = data.gates.size
         for (r in 0 until nGates - 1) {
+            // since we want distances along longitude we approximate that by dividing approximate meters in a degree
             val radius1 = data.gates[r] / meterPerDegree
             val radius2 = data.gates[r + 1] / meterPerDegree
             for (angleIndex in 0 until nAzimuth) {
@@ -150,12 +151,21 @@ class ReflectivityLayer(val context: Context) : Layer {
                 }
                 val reflectivity = data.reflectivity[angleIndex][r]
 
+                // precalculate coordinates
+                val r1SinTheta1 = radius1 * sin(Math.toRadians(angle.toDouble())).toFloat()
+                val r1SinTheta2 = radius1 * sin(Math.toRadians(angle2.toDouble())).toFloat()
+                val r2SinTheta2 = radius2 * sin(Math.toRadians(angle2.toDouble())).toFloat()
+                val r2SinTheta1 = radius2 * sin(Math.toRadians(angle.toDouble())).toFloat()
+
+                val r1CosTheta1 = radius1 * cos(Math.toRadians(angle.toDouble())).toFloat()
+                val r1CosTheta2 = radius1 * cos(Math.toRadians(angle2.toDouble())).toFloat()
+                val r2CosTheta2 = radius2 * cos(Math.toRadians(angle2.toDouble())).toFloat()
+                val r2CosTheta1 = radius2 * cos(Math.toRadians(angle.toDouble())).toFloat()
+
                 ///// Begin Triangle 1 /////
                 // r1 theta1
-                reflectivityMesh[index++] = radius1 * sin(Math.toRadians(angle.toDouble()))
-                    .toFloat()
-                reflectivityMesh[index++] = radius1 * cos(Math.toRadians(angle.toDouble()))
-                    .toFloat()
+                reflectivityMesh[index++] = r1SinTheta1
+                reflectivityMesh[index++] = r1CosTheta1
                 reflectivityMesh[index++] = 0.0f
                 // color information for triangle 1 vertex 1
                 reflectivityMesh[index++] = getColor(reflectivity)[0]
@@ -163,10 +173,8 @@ class ReflectivityLayer(val context: Context) : Layer {
                 reflectivityMesh[index++] = getColor(reflectivity)[2]
 
                 // r2 theta1
-                reflectivityMesh[index++] = radius2 * sin(Math.toRadians(angle.toDouble()))
-                    .toFloat()
-                reflectivityMesh[index++] = radius2 * cos(Math.toRadians(angle.toDouble()))
-                    .toFloat()
+                reflectivityMesh[index++] = r2SinTheta1
+                reflectivityMesh[index++] = r2CosTheta1
                 reflectivityMesh[index++] = 0.0f
                 // color information for triangle 1 vertex 2
                 reflectivityMesh[index++] = getColor(reflectivity)[0]
@@ -174,10 +182,8 @@ class ReflectivityLayer(val context: Context) : Layer {
                 reflectivityMesh[index++] = getColor(reflectivity)[2]
 
                 // r1 theta2
-                reflectivityMesh[index++] =
-                    radius1 * sin(Math.toRadians(angle2.toDouble())).toFloat()
-                reflectivityMesh[index++] =
-                    radius1 * cos(Math.toRadians(angle2.toDouble())).toFloat()
+                reflectivityMesh[index++] = r1SinTheta2
+                reflectivityMesh[index++] = r1CosTheta2
                 reflectivityMesh[index++] = 0.0f
                 // color information for triangle 1 vertex 3
                 reflectivityMesh[index++] = getColor(reflectivity)[0]
@@ -188,10 +194,8 @@ class ReflectivityLayer(val context: Context) : Layer {
                 ///// Begin Triangle 2 /////
 
                 // r1 theta2
-                reflectivityMesh[index++] = radius1 * sin(Math.toRadians(angle2.toDouble()))
-                    .toFloat()
-                reflectivityMesh[index++] = radius1 * cos(Math.toRadians(angle2.toDouble()))
-                    .toFloat()
+                reflectivityMesh[index++] = r1SinTheta2
+                reflectivityMesh[index++] = r1CosTheta2
                 reflectivityMesh[index++] = 0.0f
                 // color information for triangle 1 vertex 3
                 reflectivityMesh[index++] = getColor(reflectivity)[0]
@@ -199,10 +203,8 @@ class ReflectivityLayer(val context: Context) : Layer {
                 reflectivityMesh[index++] = getColor(reflectivity)[2]
 
                 // r2 theta2
-                reflectivityMesh[index++] =
-                    radius2 * sin(Math.toRadians(angle2.toDouble())).toFloat()
-                reflectivityMesh[index++] =
-                    radius2 * cos(Math.toRadians(angle2.toDouble())).toFloat()
+                reflectivityMesh[index++] = r2SinTheta2
+                reflectivityMesh[index++] = r2CosTheta2
                 reflectivityMesh[index++] = 0.0f
                 // color information for triangle 1 vertex 3
                 reflectivityMesh[index++] = getColor(reflectivity)[0]
@@ -210,11 +212,8 @@ class ReflectivityLayer(val context: Context) : Layer {
                 reflectivityMesh[index++] = getColor(reflectivity)[2]
 
                 // r2 theta1
-                // r2 theta1
-                reflectivityMesh[index++] =
-                    radius2 * sin(Math.toRadians(angle.toDouble())).toFloat()
-                reflectivityMesh[index++] =
-                    radius2 * cos(Math.toRadians(angle.toDouble())).toFloat()
+                reflectivityMesh[index++] = r2SinTheta1
+                reflectivityMesh[index++] = r2CosTheta1
                 reflectivityMesh[index++] = 0.0f
                 // color information for triangle 1 vertex 2
                 reflectivityMesh[index++] = getColor(reflectivity)[0]
