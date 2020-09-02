@@ -2,9 +2,11 @@ package dev.abhishekbansal.nexrad.layers
 
 import android.content.Context
 import android.opengl.GLES20
+import android.opengl.GLES30
 import com.google.gson.Gson
 import dev.abhishekbansal.nexrad.R
 import dev.abhishekbansal.nexrad.models.Reflectivity
+import dev.abhishekbansal.nexrad.models.reflectivityColors
 import dev.abhishekbansal.nexrad.utils.Shader
 import dev.abhishekbansal.nexrad.utils.extensions.rawResToString
 import timber.log.Timber
@@ -34,12 +36,17 @@ class ReflectivityLayer(val context: Context) : Layer {
     /**
      * This will be used to pass in the transformation matrix.
      */
-    private var mvpMatrixHandle: Int = 0
+    private var uMvpMatrixHandle: Int = 0
 
     /**
-     * This will be used to pass in model color information.
+     * This will be used to pass in color lookup table
      */
-    private var colorHandle = 0
+    private var uColorMapHandle = 0
+
+    /**
+     * This will be used to pass in reflectivity value per vertex
+     */
+    private var reflectivityHandle = 0
 
     /**
      * Offset of the position data.
@@ -52,19 +59,19 @@ class ReflectivityLayer(val context: Context) : Layer {
     private val positionDataSize = 2
 
     /**
-     * Offset of the color data.
+     * Offset of the reflectivity data in array
      */
-    private val colorOffset = positionDataSize
+    private val reflectivityOffset = positionDataSize
 
     /**
-     * Size of the color data in elements.
+     * Size of the reflectivity data in elements.
      */
-    private val colorDataSize = 3
+    private val reflectivityDataSize = 1
 
     /**
      * How many elements per vertex.
      */
-    private val strideBytes = (colorDataSize + positionDataSize) * bytesPerFloat
+    private val strideBytes = (reflectivityDataSize + positionDataSize) * bytesPerFloat
 
 
     private val meshShader by lazy {
@@ -86,12 +93,10 @@ class ReflectivityLayer(val context: Context) : Layer {
         meshShader.link(arrayOf("a_Position", "a_Reflectivity"))
 
         // Set program handles. These will later be used to pass in values to the program.
-        // Set program handles. These will later be used to pass in values to the program.
-
-        // Set program handles. These will later be used to pass in values to the program.
-        mvpMatrixHandle = GLES20.glGetUniformLocation(meshShader.handle, "u_MVPMatrix")
+        uMvpMatrixHandle = GLES20.glGetUniformLocation(meshShader.handle, "u_MVPMatrix")
+        uColorMapHandle = GLES30.glGetUniformLocation(meshShader.handle, "u_colorMap")
         positionHandle = GLES20.glGetAttribLocation(meshShader.handle, "a_Position")
-        colorHandle = GLES20.glGetAttribLocation(meshShader.handle, "a_Color")
+        reflectivityHandle = GLES30.glGetAttribLocation(meshShader.handle, "a_Reflectivity")
     }
 
     override fun draw(mvpMatrix: FloatArray) {
@@ -104,21 +109,19 @@ class ReflectivityLayer(val context: Context) : Layer {
             positionHandle, positionDataSize, GLES20.GL_FLOAT, false,
             strideBytes, meshVertices
         )
-
         GLES20.glEnableVertexAttribArray(positionHandle)
 
-        // Pass in the color information
-
-        // Pass in the color information
-        meshVertices.position(colorOffset)
+        // Pass in the reflectivity information
+        meshVertices.position(reflectivityOffset)
         GLES20.glVertexAttribPointer(
-            colorHandle, colorDataSize, GLES20.GL_FLOAT, false,
+            reflectivityHandle, reflectivityDataSize, GLES20.GL_FLOAT, false,
             strideBytes, meshVertices
         )
+        GLES20.glEnableVertexAttribArray(reflectivityHandle)
 
-        GLES20.glEnableVertexAttribArray(colorHandle)
-
-        GLES20.glUniformMatrix4fv(mvpMatrixHandle, 1, false, mvpMatrix, 0)
+        // pass in lookup table
+        GLES30.glUniform3fv(uColorMapHandle, 83, reflectivityColors, 0)
+        GLES20.glUniformMatrix4fv(uMvpMatrixHandle, 1, false, mvpMatrix, 0)
         GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, meshSize)
         meshShader.deactivate()
     }
@@ -126,8 +129,8 @@ class ReflectivityLayer(val context: Context) : Layer {
     private fun generateVertexData() {
         val data = getData(context)
 
-        // per vertex data = 2xy + 3rgb
-        val perVertexElements = positionDataSize + colorDataSize
+        // per vertex data = 2xy + 1R
+        val perVertexElements = positionDataSize + reflectivityDataSize
         // since we don't want go beyond last gate hence gate-1
         val totalVertices = data.azimuth.size * (data.gates.size - 1)
         // Each vertex is part of 6 triangles,
@@ -166,53 +169,37 @@ class ReflectivityLayer(val context: Context) : Layer {
                 // r1 theta1
                 reflectivityMesh[index++] = r1SinTheta1
                 reflectivityMesh[index++] = r1CosTheta1
-                // color information for triangle 1 vertex 1
-                reflectivityMesh[index++] = getColor(reflectivity)[0]
-                reflectivityMesh[index++] = getColor(reflectivity)[1]
-                reflectivityMesh[index++] = getColor(reflectivity)[2]
+                // reflectivity information for triangle 1 vertex 1
+                reflectivityMesh[index++] = reflectivity
 
                 // r2 theta1
                 reflectivityMesh[index++] = r2SinTheta1
                 reflectivityMesh[index++] = r2CosTheta1
-                // color information for triangle 1 vertex 2
-                reflectivityMesh[index++] = getColor(reflectivity)[0]
-                reflectivityMesh[index++] = getColor(reflectivity)[1]
-                reflectivityMesh[index++] = getColor(reflectivity)[2]
+                reflectivityMesh[index++] = reflectivity
 
                 // r1 theta2
                 reflectivityMesh[index++] = r1SinTheta2
                 reflectivityMesh[index++] = r1CosTheta2
-                // color information for triangle 1 vertex 3
-                reflectivityMesh[index++] = getColor(reflectivity)[0]
-                reflectivityMesh[index++] = getColor(reflectivity)[1]
-                reflectivityMesh[index++] = getColor(reflectivity)[2]
-
+                reflectivityMesh[index++] = reflectivity
 
                 ///// Begin Triangle 2 /////
 
                 // r1 theta2
                 reflectivityMesh[index++] = r1SinTheta2
                 reflectivityMesh[index++] = r1CosTheta2
-                // color information for triangle 1 vertex 3
-                reflectivityMesh[index++] = getColor(reflectivity)[0]
-                reflectivityMesh[index++] = getColor(reflectivity)[1]
-                reflectivityMesh[index++] = getColor(reflectivity)[2]
+                reflectivityMesh[index++] = reflectivity
 
                 // r2 theta2
                 reflectivityMesh[index++] = r2SinTheta2
                 reflectivityMesh[index++] = r2CosTheta2
                 // color information for triangle 1 vertex 3
-                reflectivityMesh[index++] = getColor(reflectivity)[0]
-                reflectivityMesh[index++] = getColor(reflectivity)[1]
-                reflectivityMesh[index++] = getColor(reflectivity)[2]
+                reflectivityMesh[index++] = reflectivity
 
                 // r2 theta1
                 reflectivityMesh[index++] = r2SinTheta1
                 reflectivityMesh[index++] = r2CosTheta1
                 // color information for triangle 1 vertex 2
-                reflectivityMesh[index++] = getColor(reflectivity)[0]
-                reflectivityMesh[index++] = getColor(reflectivity)[1]
-                reflectivityMesh[index++] = getColor(reflectivity)[2]
+                reflectivityMesh[index++] = reflectivity
             }
         }
 
@@ -226,35 +213,6 @@ class ReflectivityLayer(val context: Context) : Layer {
     }
 
     private fun getData(context: Context): Reflectivity {
-        return Gson().fromJson(context.rawResToString(R.raw.l3_data), Reflectivity::class.java)
-    }
-
-    private fun getColor(reflectivity: Float): FloatArray {
-        return when {
-            reflectivity <= 0 -> {
-                floatArrayOf(0.0f, 0.0f, 0.0f)
-            }
-            reflectivity < 10 -> {
-                floatArrayOf(1.0f, 1.0f, 0.0f)
-            }
-            reflectivity < 15 -> {
-                floatArrayOf(1.0f, 0.0f, 1.0f)
-            }
-            reflectivity < 20 -> {
-                floatArrayOf(0.0f, 0.0f, 1.0f)
-            }
-            reflectivity < 25 -> {
-                floatArrayOf(.5f, 1.0f, 0.0f)
-            }
-            reflectivity < 30 -> {
-                floatArrayOf(0.0f, 1.0f, 0.0f)
-            }
-            reflectivity < 35 -> {
-                floatArrayOf(0.0f, 1.0f, 1.0f)
-            }
-            else -> {
-                floatArrayOf(1.0f, .2f, .2f)
-            }
-        }
+        return Gson().fromJson(context.rawResToString(R.raw.l2_data), Reflectivity::class.java)
     }
 }
