@@ -122,7 +122,7 @@ class ReflectivityLayer(val context: Context) : Layer {
         // pass in lookup table
         GLES30.glUniform3fv(uColorMapHandle, 83, reflectivityColors, 0)
         GLES20.glUniformMatrix4fv(uMvpMatrixHandle, 1, false, mvpMatrix, 0)
-        GLES20.glDrawArrays(GLES20.GL_LINES, 0, meshSize)
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, meshSize)
         meshShader.deactivate()
     }
 
