@@ -209,7 +209,7 @@ class ReflectivityLayer(val context: Context) : Layer {
 
         Timber.i("index: $index, meshsize: $meshSize")
         meshSize = index
-
+      
         // Initialize the buffers.
         meshVertices = ByteBuffer.allocateDirect(reflectivityMesh.size * bytesPerFloat)
             .order(ByteOrder.nativeOrder()).asFloatBuffer()
