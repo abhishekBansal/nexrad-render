@@ -122,7 +122,7 @@ class ReflectivityLayer(val context: Context) : Layer {
         // pass in lookup table
         GLES30.glUniform3fv(uColorMapHandle, 83, reflectivityColors, 0)
         GLES20.glUniformMatrix4fv(uMvpMatrixHandle, 1, false, mvpMatrix, 0)
-        GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, meshSize)
+        GLES20.glDrawArrays(GLES20.GL_LINES, 0, meshSize)
         meshShader.deactivate()
     }
 
@@ -145,6 +145,10 @@ class ReflectivityLayer(val context: Context) : Layer {
             val radius1 = data.gates[r] / meterPerDegree
             val radius2 = data.gates[r + 1] / meterPerDegree
             for (angleIndex in 0 until nAzimuth) {
+                val reflectivity = data.reflectivity[angleIndex][r]
+                // early exit whenever possible
+                if (reflectivity <= 0) continue
+
                 // vertex 1 x
                 val angle = data.azimuth[angleIndex]
                 val angle2 = if (angleIndex != nAzimuth - 1) {
@@ -152,7 +156,6 @@ class ReflectivityLayer(val context: Context) : Layer {
                 } else {
                     data.azimuth[0]
                 }
-                val reflectivity = data.reflectivity[angleIndex][r]
 
                 // precalculate coordinates
                 val r1SinTheta1 = radius1 * sin(Math.toRadians(angle.toDouble())).toFloat()
@@ -202,8 +205,8 @@ class ReflectivityLayer(val context: Context) : Layer {
                 reflectivityMesh[index++] = reflectivity
             }
         }
-
         Timber.i("index: $index, meshsize: $meshSize")
+        meshSize = index
 
         // Initialize the buffers.
         meshVertices = ByteBuffer.allocateDirect(reflectivityMesh.size * bytesPerFloat)
