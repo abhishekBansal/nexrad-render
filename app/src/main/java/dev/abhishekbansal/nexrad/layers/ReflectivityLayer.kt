@@ -73,6 +73,10 @@ class ReflectivityLayer(val context: Context) : Layer {
      */
     private val strideBytes = (reflectivityDataSize + positionDataSize) * bytesPerFloat
 
+    /**
+     * Identifier for vertex buffer. This tell GPU which buffer to use for drawing
+     */
+    private var vertexBufferId = 0
 
     private val meshShader by lazy {
         Shader(
@@ -82,11 +86,6 @@ class ReflectivityLayer(val context: Context) : Layer {
     }
 
     private var meshSize = 0
-
-    /**
-     * Store our model data in a float buffer.
-     */
-    private lateinit var meshVertices: FloatBuffer
 
     override fun prepare() {
         generateVertexData()
@@ -103,26 +102,29 @@ class ReflectivityLayer(val context: Context) : Layer {
         // Pass in the position information
         meshShader.activate()
 
+        // Bind VBO or tell GPU which buffer to use for subsequent drawings
+        GLES20.glBindBuffer(GLES30.GL_ARRAY_BUFFER, vertexBufferId)
+
         // Pass in the position information
-        meshVertices.position(positionOffset)
         GLES20.glVertexAttribPointer(
-            positionHandle, positionDataSize, GLES20.GL_FLOAT, false,
-            strideBytes, meshVertices
+            positionHandle, positionDataSize, GLES20.GL_FLOAT, false, strideBytes, 0
         )
         GLES20.glEnableVertexAttribArray(positionHandle)
 
         // Pass in the reflectivity information
-        meshVertices.position(reflectivityOffset)
         GLES20.glVertexAttribPointer(
             reflectivityHandle, reflectivityDataSize, GLES20.GL_FLOAT, false,
-            strideBytes, meshVertices
+            strideBytes, positionDataSize * bytesPerFloat
         )
         GLES20.glEnableVertexAttribArray(reflectivityHandle)
 
         // pass in lookup table
-        GLES30.glUniform3fv(uColorMapHandle, 83, reflectivityColors, 0)
+        GLES20.glUniform3fv(uColorMapHandle, 83, reflectivityColors, 0)
         GLES20.glUniformMatrix4fv(uMvpMatrixHandle, 1, false, mvpMatrix, 0)
         GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, meshSize)
+
+        // Clear the currently bound buffer (so future OpenGL calls do not use this buffer).
+        GLES20.glBindBuffer(GLES30.GL_ARRAY_BUFFER, 0)
         meshShader.deactivate()
     }
 
@@ -205,11 +207,33 @@ class ReflectivityLayer(val context: Context) : Layer {
 
         Timber.i("index: $index, meshsize: $meshSize")
 
-        // Initialize the buffers.
-        meshVertices = ByteBuffer.allocateDirect(reflectivityMesh.size * bytesPerFloat)
+        val meshVertices = ByteBuffer.allocateDirect(meshSize * bytesPerFloat)
             .order(ByteOrder.nativeOrder()).asFloatBuffer()
+        meshVertices.put(reflectivityMesh, 0, meshSize)?.position(0)
 
-        meshVertices.put(reflectivityMesh)?.position(0)
+        // create VBO
+        // First, generate as many buffers as we need.
+        // This will give us the OpenGL handles for these buffers.
+        val buffers = IntArray(1)
+        GLES30.glGenBuffers(1, buffers, 0)
+
+        // Bind to the buffer. Future commands will affect this buffer specifically.
+        GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, buffers[0])
+
+        // Transfer data from client memory to the buffer.
+        // We can release the client memory after this call.
+        GLES30.glBufferData(
+            GLES30.GL_ARRAY_BUFFER, meshSize * bytesPerFloat,
+            meshVertices, GLES30.GL_STATIC_DRAW
+        )
+
+        // IMPORTANT: Unbind from the buffer when we're done with it.
+        GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, 0)
+        vertexBufferId = buffers[0]
+
+        // release client side buffer
+        meshVertices.limit(0)
+        meshVertices.clear()
     }
 
     private fun getData(context: Context): Reflectivity {
