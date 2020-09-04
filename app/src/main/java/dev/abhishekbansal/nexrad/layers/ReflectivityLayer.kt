@@ -145,6 +145,11 @@ class ReflectivityLayer(val context: Context) : Layer {
             val radius1 = data.gates[r] / meterPerDegree
             val radius2 = data.gates[r + 1] / meterPerDegree
             for (angleIndex in 0 until nAzimuth) {
+                val reflectivity = data.reflectivity[angleIndex][r]
+
+                // early exit whenever possible
+                if (reflectivity <= 0) continue
+
                 // vertex 1 x
                 val angle = data.azimuth[angleIndex]
                 val angle2 = if (angleIndex != nAzimuth - 1) {
@@ -152,7 +157,6 @@ class ReflectivityLayer(val context: Context) : Layer {
                 } else {
                     data.azimuth[0]
                 }
-                val reflectivity = data.reflectivity[angleIndex][r]
 
                 // precalculate coordinates
                 val r1SinTheta1 = radius1 * sin(Math.toRadians(angle.toDouble())).toFloat()
@@ -204,12 +208,13 @@ class ReflectivityLayer(val context: Context) : Layer {
         }
 
         Timber.i("index: $index, meshsize: $meshSize")
-
+        meshSize = index
+      
         // Initialize the buffers.
-        meshVertices = ByteBuffer.allocateDirect(reflectivityMesh.size * bytesPerFloat)
+        meshVertices = ByteBuffer.allocateDirect(meshSize * bytesPerFloat)
             .order(ByteOrder.nativeOrder()).asFloatBuffer()
 
-        meshVertices.put(reflectivityMesh)?.position(0)
+        meshVertices.put(reflectivityMesh, 0, meshSize)?.position(0)
     }
 
     private fun getData(context: Context): Reflectivity {
