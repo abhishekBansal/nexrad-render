@@ -211,10 +211,10 @@ class ReflectivityLayer(val context: Context) : Layer {
         meshSize = index
       
         // Initialize the buffers.
-        meshVertices = ByteBuffer.allocateDirect(reflectivityMesh.size * bytesPerFloat)
+        meshVertices = ByteBuffer.allocateDirect(meshSize * bytesPerFloat)
             .order(ByteOrder.nativeOrder()).asFloatBuffer()
 
-        meshVertices.put(reflectivityMesh)?.position(0)
+        meshVertices.put(reflectivityMesh, 0, meshSize)?.position(0)
     }
 
     private fun getData(context: Context): Reflectivity {
