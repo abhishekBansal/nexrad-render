@@ -146,6 +146,7 @@ class ReflectivityLayer(val context: Context) : Layer {
             val radius2 = data.gates[r + 1] / meterPerDegree
             for (angleIndex in 0 until nAzimuth) {
                 val reflectivity = data.reflectivity[angleIndex][r]
+
                 // early exit whenever possible
                 if (reflectivity <= 0) continue
 
@@ -205,6 +206,7 @@ class ReflectivityLayer(val context: Context) : Layer {
                 reflectivityMesh[index++] = reflectivity
             }
         }
+
         Timber.i("index: $index, meshsize: $meshSize")
         meshSize = index
 
