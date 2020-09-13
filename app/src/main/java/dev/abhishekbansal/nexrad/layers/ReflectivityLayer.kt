@@ -3,6 +3,9 @@ package dev.abhishekbansal.nexrad.layers
 import android.content.Context
 import android.opengl.GLES20
 import android.opengl.GLES30
+import android.util.Half
+import androidx.annotation.HalfFloat
+import androidx.core.util.toHalf
 import com.google.gson.Gson
 import dev.abhishekbansal.nexrad.R
 import dev.abhishekbansal.nexrad.models.Reflectivity
@@ -26,7 +29,7 @@ class ReflectivityLayer(val context: Context) : Layer {
     /**
      * How many bytes per float.
      */
-    private val bytesPerFloat = 4
+    private val bytesPerFloat = 2
 
     /**
      * This will be used to pass in model position information.
@@ -48,20 +51,11 @@ class ReflectivityLayer(val context: Context) : Layer {
      */
     private var reflectivityHandle = 0
 
-    /**
-     * Offset of the position data.
-     */
-    private val positionOffset = 0
 
     /**
      * Size of the position data in elements.
      */
     private val positionDataSize = 2
-
-    /**
-     * Offset of the reflectivity data in array
-     */
-    private val reflectivityOffset = positionDataSize
 
     /**
      * Size of the reflectivity data in elements.
@@ -107,13 +101,13 @@ class ReflectivityLayer(val context: Context) : Layer {
 
         // Pass in the position information
         GLES20.glVertexAttribPointer(
-            positionHandle, positionDataSize, GLES20.GL_FLOAT, false, strideBytes, 0
+            positionHandle, positionDataSize, GLES30.GL_HALF_FLOAT, false, strideBytes, 0
         )
         GLES20.glEnableVertexAttribArray(positionHandle)
 
         // Pass in the reflectivity information
         GLES20.glVertexAttribPointer(
-            reflectivityHandle, reflectivityDataSize, GLES20.GL_FLOAT, false,
+            reflectivityHandle, reflectivityDataSize, GLES30.GL_HALF_FLOAT, false,
             strideBytes, positionDataSize * bytesPerFloat
         )
         GLES20.glEnableVertexAttribArray(reflectivityHandle)
@@ -137,7 +131,7 @@ class ReflectivityLayer(val context: Context) : Layer {
         val totalVertices = data.azimuth.size * (data.gates.size - 1)
         // Each vertex is part of 6 triangles,
         meshSize = totalVertices * perVertexElements * 6
-        val reflectivityMesh = FloatArray(meshSize)
+        val reflectivityMesh = ShortArray(meshSize)
 
         var index = 0
         val nAzimuth = data.azimuth.size
@@ -147,10 +141,10 @@ class ReflectivityLayer(val context: Context) : Layer {
             val radius1 = data.gates[r] / meterPerDegree
             val radius2 = data.gates[r + 1] / meterPerDegree
             for (angleIndex in 0 until nAzimuth) {
-                val reflectivity = data.reflectivity[angleIndex][r]
+                val reflectivity = data.reflectivity[angleIndex][r].toHalf()
 
                 // early exit whenever possible
-                if (reflectivity <= 0) continue
+                if (reflectivity <= Half.valueOf(0)) continue
 
                 // vertex 1 x
                 val angle = data.azimuth[angleIndex]
@@ -161,62 +155,63 @@ class ReflectivityLayer(val context: Context) : Layer {
                 }
 
                 // precalculate coordinates
-                val r1SinTheta1 = radius1 * sin(Math.toRadians(angle.toDouble())).toFloat()
-                val r1SinTheta2 = radius1 * sin(Math.toRadians(angle2.toDouble())).toFloat()
-                val r2SinTheta2 = radius2 * sin(Math.toRadians(angle2.toDouble())).toFloat()
-                val r2SinTheta1 = radius2 * sin(Math.toRadians(angle.toDouble())).toFloat()
+                val r1SinTheta1 = (radius1 * sin(Math.toRadians(angle.toDouble())).toFloat()).toHalf()
+                val r1SinTheta2 = (radius1 * sin(Math.toRadians(angle2.toDouble())).toFloat()).toHalf()
+                val r2SinTheta2 = (radius2 * sin(Math.toRadians(angle2.toDouble())).toFloat()).toHalf()
+                val r2SinTheta1 = (radius2 * sin(Math.toRadians(angle.toDouble())).toFloat()).toHalf()
 
-                val r1CosTheta1 = radius1 * cos(Math.toRadians(angle.toDouble())).toFloat()
-                val r1CosTheta2 = radius1 * cos(Math.toRadians(angle2.toDouble())).toFloat()
-                val r2CosTheta2 = radius2 * cos(Math.toRadians(angle2.toDouble())).toFloat()
-                val r2CosTheta1 = radius2 * cos(Math.toRadians(angle.toDouble())).toFloat()
+                val r1CosTheta1 = (radius1 * cos(Math.toRadians(angle.toDouble())).toFloat()).toHalf()
+                val r1CosTheta2 = (radius1 * cos(Math.toRadians(angle2.toDouble())).toFloat()).toHalf()
+                val r2CosTheta2 = (radius2 * cos(Math.toRadians(angle2.toDouble())).toFloat()).toHalf()
+                val r2CosTheta1 = (radius2 * cos(Math.toRadians(angle.toDouble())).toFloat()).toHalf()
 
                 ///// Begin Triangle 1 /////
                 // r1 theta1
-                reflectivityMesh[index++] = r1SinTheta1
-                reflectivityMesh[index++] = r1CosTheta1
+                reflectivityMesh[index++] = r1SinTheta1.halfValue()
+                reflectivityMesh[index++] = r1CosTheta1.halfValue()
                 // reflectivity information for triangle 1 vertex 1
-                reflectivityMesh[index++] = reflectivity
+                reflectivityMesh[index++] = reflectivity.halfValue()
 
                 // r2 theta1
-                reflectivityMesh[index++] = r2SinTheta1
-                reflectivityMesh[index++] = r2CosTheta1
-                reflectivityMesh[index++] = reflectivity
+                reflectivityMesh[index++] = r2SinTheta1.halfValue()
+                reflectivityMesh[index++] = r2CosTheta1.halfValue()
+                reflectivityMesh[index++] = reflectivity.halfValue()
 
                 // r1 theta2
-                reflectivityMesh[index++] = r1SinTheta2
-                reflectivityMesh[index++] = r1CosTheta2
-                reflectivityMesh[index++] = reflectivity
+                reflectivityMesh[index++] = r1SinTheta2.halfValue()
+                reflectivityMesh[index++] = r1CosTheta2.halfValue()
+                reflectivityMesh[index++] = reflectivity.halfValue()
 
                 ///// Begin Triangle 2 /////
 
                 // r1 theta2
-                reflectivityMesh[index++] = r1SinTheta2
-                reflectivityMesh[index++] = r1CosTheta2
-                reflectivityMesh[index++] = reflectivity
+                reflectivityMesh[index++] = r1SinTheta2.halfValue()
+                reflectivityMesh[index++] = r1CosTheta2.halfValue()
+                reflectivityMesh[index++] = reflectivity.halfValue()
 
                 // r2 theta2
-                reflectivityMesh[index++] = r2SinTheta2
-                reflectivityMesh[index++] = r2CosTheta2
+                reflectivityMesh[index++] = r2SinTheta2.halfValue()
+                reflectivityMesh[index++] = r2CosTheta2.halfValue()
                 // color information for triangle 1 vertex 3
-                reflectivityMesh[index++] = reflectivity
+                reflectivityMesh[index++] = reflectivity.halfValue()
 
                 // r2 theta1
-                reflectivityMesh[index++] = r2SinTheta1
-                reflectivityMesh[index++] = r2CosTheta1
+                reflectivityMesh[index++] = r2SinTheta1.halfValue()
+                reflectivityMesh[index++] = r2CosTheta1.halfValue()
                 // color information for triangle 1 vertex 2
-                reflectivityMesh[index++] = reflectivity
+                reflectivityMesh[index++] = reflectivity.halfValue()
             }
         }
 
         Timber.i("index: $index, meshsize: $meshSize")
 
         meshSize = index
-      
+
         // Initialize the buffers.
         val meshVertices = ByteBuffer.allocateDirect(meshSize * bytesPerFloat)
-            .order(ByteOrder.nativeOrder()).asFloatBuffer()
-        meshVertices.put(reflectivityMesh, 0, meshSize)?.position(0)
+            .order(ByteOrder.nativeOrder()).asShortBuffer()
+
+        meshVertices.put(reflectivityMesh, 0, meshSize).position(0)
 
         // create VBO
         // First, generate as many buffers as we need.
