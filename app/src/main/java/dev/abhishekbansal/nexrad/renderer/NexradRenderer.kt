@@ -73,6 +73,7 @@ class NexradRenderer(private val context: Context) : GLSurfaceView.Renderer,
         Matrix.setLookAtM(mViewMatrix, 0, eyeX, eyeY, eyeZ, lookX, lookY, lookZ, upX, upY, upZ)
         val layer = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) ReflectivityLayer(context)
             else ReflectivityLayerHalfFloat(context)
+//        val layer = ReflectivityLayer(context)
         layer.prepare()
         layers.add(layer)
     }

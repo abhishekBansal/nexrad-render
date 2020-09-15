@@ -6,6 +6,7 @@ import android.os.Bundle
 import dev.abhishekbansal.nexrad.databinding.ActivityNexradRenderBinding
 import dev.abhishekbansal.nexrad.renderer.FPSChangeListener
 import dev.abhishekbansal.nexrad.renderer.NexradRenderer
+import timber.log.Timber
 
 class NexradRenderActivity : Activity() {
     /**
@@ -16,6 +17,8 @@ class NexradRenderActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
+
+        Timber.plant(Timber.DebugTree())
 
         // Check if the system supports OpenGL ES 2.0.
         val activityManager = getSystemService(ACTIVITY_SERVICE) as ActivityManager

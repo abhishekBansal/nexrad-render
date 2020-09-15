@@ -8,10 +8,10 @@ import dev.abhishekbansal.nexrad.models.Reflectivity
 import dev.abhishekbansal.nexrad.models.reflectivityColors
 import dev.abhishekbansal.nexrad.utils.Shader
 import dev.abhishekbansal.nexrad.utils.extensions.rawResToString
+import dev.abhishekbansal.nexrad.utils.measureTime
 import timber.log.Timber
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-import java.nio.FloatBuffer
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -130,116 +130,121 @@ class ReflectivityLayer(val context: Context) : Layer {
     private fun generateVertexData() {
         val data = getData(context)
 
-        // per vertex data = 2xy + 1R
-        val perVertexElements = positionDataSize + reflectivityDataSize
-        // since we don't want go beyond last gate hence gate-1
-        val totalVertices = data.azimuth.size * (data.gates.size - 1)
-        // Each vertex is part of 6 triangles,
-        meshSize = totalVertices * perVertexElements * 6
-        val reflectivityMesh = FloatArray(meshSize)
+        measureTime("Vertex Data Generation") {
+            // per vertex data = 2xy + 1R
+            val perVertexElements = positionDataSize + reflectivityDataSize
+            // since we don't want go beyond last gate hence gate-1
+            val totalVertices = data.azimuth.size * (data.gates.size - 1)
+            // Each vertex is part of 6 triangles,
+            meshSize = totalVertices * perVertexElements * 6
+            val reflectivityMesh = FloatArray(meshSize)
 
-        var index = 0
-        val nAzimuth = data.azimuth.size
-        val nGates = data.gates.size
-        for (r in 0 until nGates - 1) {
-            // since we want distances along longitude we approximate that by dividing approximate meters in a degree
-            val radius1 = data.gates[r] / meterPerDegree
-            val radius2 = data.gates[r + 1] / meterPerDegree
-            for (angleIndex in 0 until nAzimuth) {
-                val reflectivity = data.reflectivity[angleIndex][r]
+            var index = 0
+            val nAzimuth = data.azimuth.size
+            val nGates = data.gates.size
+            for (r in 0 until nGates - 1) {
+                // since we want distances along longitude we approximate that by dividing approximate meters in a degree
+                val radius1 = data.gates[r] / meterPerDegree
+                val radius2 = data.gates[r + 1] / meterPerDegree
+                for (angleIndex in 0 until nAzimuth) {
+                    val reflectivity = data.reflectivity[angleIndex][r]
 
-                // early exit whenever possible
-                if (reflectivity <= 0) continue
+                    // early exit whenever possible
+                    if (reflectivity <= 0) continue
 
-                // vertex 1 x
-                val angle = data.azimuth[angleIndex]
-                val angle2 = if (angleIndex != nAzimuth - 1) {
-                    data.azimuth[angleIndex + 1]
-                } else {
-                    data.azimuth[0]
+                    // vertex 1 x
+                    val angle = Math.toRadians(data.azimuth[angleIndex].toDouble()).toFloat()
+                    val angle2 = if (angleIndex != nAzimuth - 1) {
+                        Math.toRadians(data.azimuth[angleIndex + 1].toDouble()).toFloat()
+                    } else {
+                        Math.toRadians(data.azimuth[0].toDouble()).toFloat()
+                    }
+
+                    // precalculate coordinates
+                    val r1SinTheta1 = radius1 * sin(angle)
+                    val r1SinTheta2 = radius1 * sin(angle2)
+                    val r2SinTheta2 = radius2 * sin(angle2)
+                    val r2SinTheta1 = radius2 * sin(angle)
+
+                    val r1CosTheta1 = radius1 * cos(angle)
+                    val r1CosTheta2 = radius1 * cos(angle2)
+                    val r2CosTheta2 = radius2 * cos(angle2)
+                    val r2CosTheta1 = radius2 * cos(angle)
+
+                    ///// Begin Triangle 1 /////
+                    // r1 theta1
+                    reflectivityMesh[index++] = r1SinTheta1
+                    reflectivityMesh[index++] = r1CosTheta1
+                    // reflectivity information for triangle 1 vertex 1
+                    reflectivityMesh[index++] = reflectivity
+
+                    // r2 theta1
+                    reflectivityMesh[index++] = r2SinTheta1
+                    reflectivityMesh[index++] = r2CosTheta1
+                    reflectivityMesh[index++] = reflectivity
+
+                    // r1 theta2
+                    reflectivityMesh[index++] = r1SinTheta2
+                    reflectivityMesh[index++] = r1CosTheta2
+                    reflectivityMesh[index++] = reflectivity
+
+                    ///// Begin Triangle 2 /////
+
+                    // r1 theta2
+                    reflectivityMesh[index++] = r1SinTheta2
+                    reflectivityMesh[index++] = r1CosTheta2
+                    reflectivityMesh[index++] = reflectivity
+
+                    // r2 theta2
+                    reflectivityMesh[index++] = r2SinTheta2
+                    reflectivityMesh[index++] = r2CosTheta2
+                    // color information for triangle 1 vertex 3
+                    reflectivityMesh[index++] = reflectivity
+
+                    // r2 theta1
+                    reflectivityMesh[index++] = r2SinTheta1
+                    reflectivityMesh[index++] = r2CosTheta1
+                    // color information for triangle 1 vertex 2
+                    reflectivityMesh[index++] = reflectivity
                 }
-
-                // precalculate coordinates
-                val r1SinTheta1 = radius1 * sin(Math.toRadians(angle.toDouble())).toFloat()
-                val r1SinTheta2 = radius1 * sin(Math.toRadians(angle2.toDouble())).toFloat()
-                val r2SinTheta2 = radius2 * sin(Math.toRadians(angle2.toDouble())).toFloat()
-                val r2SinTheta1 = radius2 * sin(Math.toRadians(angle.toDouble())).toFloat()
-
-                val r1CosTheta1 = radius1 * cos(Math.toRadians(angle.toDouble())).toFloat()
-                val r1CosTheta2 = radius1 * cos(Math.toRadians(angle2.toDouble())).toFloat()
-                val r2CosTheta2 = radius2 * cos(Math.toRadians(angle2.toDouble())).toFloat()
-                val r2CosTheta1 = radius2 * cos(Math.toRadians(angle.toDouble())).toFloat()
-
-                ///// Begin Triangle 1 /////
-                // r1 theta1
-                reflectivityMesh[index++] = r1SinTheta1
-                reflectivityMesh[index++] = r1CosTheta1
-                // reflectivity information for triangle 1 vertex 1
-                reflectivityMesh[index++] = reflectivity
-
-                // r2 theta1
-                reflectivityMesh[index++] = r2SinTheta1
-                reflectivityMesh[index++] = r2CosTheta1
-                reflectivityMesh[index++] = reflectivity
-
-                // r1 theta2
-                reflectivityMesh[index++] = r1SinTheta2
-                reflectivityMesh[index++] = r1CosTheta2
-                reflectivityMesh[index++] = reflectivity
-
-                ///// Begin Triangle 2 /////
-
-                // r1 theta2
-                reflectivityMesh[index++] = r1SinTheta2
-                reflectivityMesh[index++] = r1CosTheta2
-                reflectivityMesh[index++] = reflectivity
-
-                // r2 theta2
-                reflectivityMesh[index++] = r2SinTheta2
-                reflectivityMesh[index++] = r2CosTheta2
-                // color information for triangle 1 vertex 3
-                reflectivityMesh[index++] = reflectivity
-
-                // r2 theta1
-                reflectivityMesh[index++] = r2SinTheta1
-                reflectivityMesh[index++] = r2CosTheta1
-                // color information for triangle 1 vertex 2
-                reflectivityMesh[index++] = reflectivity
             }
+
+            Timber.i("index: $index, meshsize: $meshSize")
+
+            meshSize = index
+
+            // Initialize the buffers.
+            val meshVertices = ByteBuffer.allocateDirect(meshSize * bytesPerFloat)
+                .order(ByteOrder.nativeOrder()).asFloatBuffer()
+            meshVertices.put(reflectivityMesh, 0, meshSize)
+            // reset
+            meshVertices.position(0)
+            // create VBO
+            // First, generate as many buffers as we need.
+            // This will give us the OpenGL handles for these buffers.
+            val buffers = IntArray(1)
+            GLES30.glGenBuffers(1, buffers, 0)
+
+            // Bind to the buffer. Future commands will affect this buffer specifically.
+            GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, buffers[0])
+
+            // Transfer data from client memory to the buffer.
+            // We can release the client memory after this call.
+            measureTime("GPU Transfer Time") {
+                GLES30.glBufferData(
+                    GLES30.GL_ARRAY_BUFFER, meshSize * bytesPerFloat,
+                    meshVertices, GLES30.GL_STATIC_DRAW
+                )
+            }
+
+            // IMPORTANT: Unbind from the buffer when we're done with it.
+            GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, 0)
+            vertexBufferId = buffers[0]
+
+            // release client side buffer
+            meshVertices.limit(0)
+            meshVertices.clear()
         }
-
-        Timber.i("index: $index, meshsize: $meshSize")
-
-        meshSize = index
-
-        // Initialize the buffers.
-        val meshVertices = ByteBuffer.allocateDirect(meshSize * bytesPerFloat)
-            .order(ByteOrder.nativeOrder()).asFloatBuffer()
-        meshVertices.put(reflectivityMesh, 0, meshSize)?.position(0)
-
-        // create VBO
-        // First, generate as many buffers as we need.
-        // This will give us the OpenGL handles for these buffers.
-        val buffers = IntArray(1)
-        GLES30.glGenBuffers(1, buffers, 0)
-
-        // Bind to the buffer. Future commands will affect this buffer specifically.
-        GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, buffers[0])
-
-        // Transfer data from client memory to the buffer.
-        // We can release the client memory after this call.
-        GLES30.glBufferData(
-            GLES30.GL_ARRAY_BUFFER, meshSize * bytesPerFloat,
-            meshVertices, GLES30.GL_STATIC_DRAW
-        )
-
-        // IMPORTANT: Unbind from the buffer when we're done with it.
-        GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, 0)
-        vertexBufferId = buffers[0]
-
-        // release client side buffer
-        meshVertices.limit(0)
-        meshVertices.clear()
     }
 
     private fun getData(context: Context): Reflectivity {
