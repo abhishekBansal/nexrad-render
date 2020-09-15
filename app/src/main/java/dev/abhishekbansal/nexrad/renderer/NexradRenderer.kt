@@ -4,9 +4,10 @@ import android.content.Context
 import android.opengl.GLES30
 import android.opengl.GLSurfaceView
 import android.opengl.Matrix
+import android.os.Build
 import dev.abhishekbansal.nexrad.layers.Layer
 import dev.abhishekbansal.nexrad.layers.ReflectivityLayer
-import dev.abhishekbansal.nexrad.layers.TriangleLayer
+import dev.abhishekbansal.nexrad.layers.ReflectivityLayerHalfFloat
 import timber.log.Timber
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
@@ -22,6 +23,7 @@ class NexradRenderer(private val context: Context) : GLSurfaceView.Renderer,
     private var scaleFactor: Float = 1.0f
     private var translateX: Float = 0.0f
     private var translateY: Float = 0.0f
+
     /**
      * Store the model matrix. This matrix is used to move models from object space (where each model can be thought
      * of being located at the center of the universe) to world space.
@@ -55,6 +57,7 @@ class NexradRenderer(private val context: Context) : GLSurfaceView.Renderer,
 
     var fpsListener: FPSChangeListener? = null
     val layers = mutableListOf<Layer>()
+
     /**
      * Allocate storage for the final combined matrix. This will be passed into the meshShader program.
      */
@@ -68,7 +71,8 @@ class NexradRenderer(private val context: Context) : GLSurfaceView.Renderer,
         // NOTE: In OpenGL 1, a ModelView matrix is used, which is a combination of a model and
         // view matrix. In OpenGL 2, we can keep track of these matrices separately if we choose.
         Matrix.setLookAtM(mViewMatrix, 0, eyeX, eyeY, eyeZ, lookX, lookY, lookZ, upX, upY, upZ)
-        val layer = ReflectivityLayer(context)
+        val layer = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) ReflectivityLayer(context)
+            else ReflectivityLayerHalfFloat(context)
         layer.prepare()
         layers.add(layer)
     }

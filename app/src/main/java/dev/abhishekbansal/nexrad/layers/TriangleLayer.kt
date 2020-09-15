@@ -1,7 +1,7 @@
 package dev.abhishekbansal.nexrad.layers
 
 import android.content.Context
-import android.opengl.GLES20
+import android.opengl.GLES30
 import dev.abhishekbansal.nexrad.R
 import dev.abhishekbansal.nexrad.utils.Shader
 import dev.abhishekbansal.nexrad.utils.extensions.rawResToString
@@ -89,9 +89,9 @@ class TriangleLayer(val context: Context) : Layer {
         triangleShader.link(arrayOf("a_Position", "a_Color"))
 
         // Set program handles. These will later be used to pass in values to the program.
-        mMVPMatrixHandle = GLES20.glGetUniformLocation(triangleShader.handle, "u_MVPMatrix")
-        mPositionHandle = GLES20.glGetAttribLocation(triangleShader.handle, "a_Position")
-        mColorHandle = GLES20.glGetAttribLocation(triangleShader.handle, "a_Color")
+        mMVPMatrixHandle = GLES30.glGetUniformLocation(triangleShader.handle, "u_MVPMatrix")
+        mPositionHandle = GLES30.glGetAttribLocation(triangleShader.handle, "a_Position")
+        mColorHandle = GLES30.glGetAttribLocation(triangleShader.handle, "a_Color")
     }
 
     override fun draw(mvpMatrix: FloatArray) {
@@ -101,29 +101,29 @@ class TriangleLayer(val context: Context) : Layer {
 
         // Pass in the position information
         mTriangle1Vertices?.position(mPositionOffset)
-        GLES20.glVertexAttribPointer(
-            mPositionHandle, mPositionDataSize, GLES20.GL_FLOAT, false,
+        GLES30.glVertexAttribPointer(
+            mPositionHandle, mPositionDataSize, GLES30.GL_FLOAT, false,
             mStrideBytes, mTriangle1Vertices
         )
 
-        GLES20.glEnableVertexAttribArray(mPositionHandle)
+        GLES30.glEnableVertexAttribArray(mPositionHandle)
 
         // Pass in the color information
 
         // Pass in the color information
         mTriangle1Vertices?.position(mColorOffset)
-        GLES20.glVertexAttribPointer(
-            mColorHandle, mColorDataSize, GLES20.GL_FLOAT, false,
+        GLES30.glVertexAttribPointer(
+            mColorHandle, mColorDataSize, GLES30.GL_FLOAT, false,
             mStrideBytes, mTriangle1Vertices
         )
 
-        GLES20.glEnableVertexAttribArray(mColorHandle)
+        GLES30.glEnableVertexAttribArray(mColorHandle)
 
         // This multiplies the modelview matrix by the projection matrix, and stores the result in the MVP matrix
         // (which now contains model * view * projection).
 
-        GLES20.glUniformMatrix4fv(mMVPMatrixHandle, 1, false, mvpMatrix, 0)
-        GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, 3)
+        GLES30.glUniformMatrix4fv(mMVPMatrixHandle, 1, false, mvpMatrix, 0)
+        GLES30.glDrawArrays(GLES30.GL_TRIANGLES, 0, 3)
     }
 
 }
