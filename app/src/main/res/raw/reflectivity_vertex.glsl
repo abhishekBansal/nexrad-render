@@ -1,5 +1,5 @@
 uniform mat4 u_MVPMatrix;              // A constant representing the combined model/view/projection matrix.
-uniform vec3[86] u_colorMap;
+uniform vec3 u_colorMap[86];
 
 attribute vec2 a_Position;             // Per-vertex position information we will pass in.
 attribute float a_Reflectivity;        // Per-vertex reflectivity information
